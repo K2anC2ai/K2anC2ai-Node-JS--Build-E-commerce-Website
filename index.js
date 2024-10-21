@@ -37,19 +37,21 @@ function isProductInCart(cart,id){
 };
 
 
-function calculateTotal(cart,req){
-    total = 0;
-    for(let i = 0; i.length; i++){
-        if(cart[i].sale_price){
-            total = total + (cart[i].sale_price*cart[i]*quantity);
-        }else{
-            total = total + (cart[i].price*cart[i].quantity)
-    }
-    }
-    req.session.total = total ;
-    return total;
+function calculateTotal(cart, req) {
+    let total = 0;  // initialize total
 
-};
+    for (let i = 0; i < cart.length; i++) {  // correct the loop
+        if (cart[i].sale_price) {
+            total += cart[i].sale_price * cart[i].quantity;  // correct the quantity reference
+        } else {
+            total += cart[i].price * cart[i].quantity;  // correct the quantity reference
+        }
+    }
+
+    req.session.total = total;  // store total in session
+    return total;
+}
+
 
 app.get('/', function(req, res){
 
@@ -124,4 +126,90 @@ app.post('/remove_product',function(req,res){
     calculateTotal(cart,req);
     res.redirect('/cart');
 
+});
+
+
+app.post('/edit_product_quantity',function(req,res){
+    var id = req.body.id;
+    var quantity = req.body.quantity;
+    var increase_btn = req.body.increase_product_quantity;
+    var decrease_btn = req.body.decrease_product_quantity;
+
+    var cart = req.session.cart;
+
+    if(increase_btn){
+        for(let i=0; i<cart.length;i++){
+            if(cart[i].id == id){
+                if(cart[i].quantity >0){
+                    cart[i].quantity = parseInt(cart[i].quantity)+1;
+                }
+            }
+        }
+    }
+    if(decrease_btn){
+        for(let i=0; i<cart.length;i++){
+            if(cart[i].id == id){
+                if(cart[i].quantity >1){
+                    cart[i].quantity = parseInt(cart[i].quantity)-1;
+                }
+            }
+        }
+    }
+
+
+    calculateTotal(cart,req);
+    res.redirect('/cart')
+});
+
+
+app.get('/checkout',function(req,res){
+    var total = req.session.total;
+    res.render('pages/checkout',{total:total});
+
+});
+
+app.post('/place_order',function(req,res){
+
+    var name = req.body.name;
+    var email = req.body.email;
+    var phone = req.body.phone;
+    var city = req.body.city;
+    var address = req.body.address;
+    var cost = req.session.total;
+    var status = "not paid";
+    var date = new Date();
+    var product_ids = "";
+
+    var con = mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: '',
+        database: 'node_project'
+    
+    });
+
+    var cart = req.session.cart;
+    for(let i=0; i<cart.length; i++){
+        product_ids = product_ids +","+cart[i].id;
+    }
+
+    con.connect((err)=>{
+            if(err){
+                console.log(err)
+            }else{
+                var query = "INSERT INTO orders(cost,name,email,status,city,address,phone,date,product_ids) VALUES ?";
+                var values = [
+                [cost,name,email,status,city,address,phone,date,product_ids]
+                ];
+                con.query(query,[values],(err,result)=>{
+                    
+                    res.redirect('/payment')
+
+                })
+            }
+    })
+});
+
+app.get('/payment',function(req,res){
+    res.render('pages/payment')
 });

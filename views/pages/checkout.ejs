@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout</title>
+    <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="/css/style.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2 class="text-center">Checkout</h2>
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <form action="/place_order" method="POST">
+                    <div class="form-group">
+                        <label for="name">Full Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number</label>
+                        <input type="text" class="form-control" id="phone" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="city">City</label>
+                        <input type="text" class="form-control" id="city" name="city" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="address">Shipping Address</label>
+                        <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
+                    </div>
+                    <h4 class="text-right">Total: ฿<%= total %></h4>
+                    <button type="submit" class="btn btn-success btn-block mt-3">Place Order</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

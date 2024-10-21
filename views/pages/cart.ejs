@@ -87,9 +87,11 @@
                                     <% } %>
                                 </td>
                                 <td>
-                                    <form>
-                                        <input  type="number" name="quantity" value="1">
-                                        <input  type="submit" value="edit" class="edit-btn" name="edit_product_quantity_btn">
+                                    <form method="post" action="/edit_product_quantity">
+                                        <input type="hidden" value="<%= product.id%>" name="id">
+                                        <input  type="submit" value="-" class="edit-btn" name="decrease_product_quantity">
+                                        <input  type="text" name="quantity" value="<%= product.quantity %>" readonly>
+                                        <input  type="submit" value="+" class="edit-btn" name="increase_product_quantity">
                                     </form>
                                 </td>
                                 <td>
@@ -113,7 +115,10 @@
 
                 <div class="cart-actions">
                     <a href="/" class="btn btn-secondary">Continue Shopping</a>
-                    <button class="btn btn-primary">Checkout</button>
+                        <form method="get" action="/checkout">
+                            <input type="submit" class="btn checkout-btn" value="Checkout" name="">
+
+                        </form>
                 </div>
             <% } else { %>
                 <p>Your cart is empty.</p>

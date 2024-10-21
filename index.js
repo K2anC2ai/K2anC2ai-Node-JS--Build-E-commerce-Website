@@ -210,6 +210,43 @@ app.post('/place_order',function(req,res){
     })
 });
 
-app.get('/payment',function(req,res){
-    res.render('pages/payment')
+app.get('/payment', function (req, res) {
+    var total = req.session.total; // Retrieve the total from the session
+    res.render('pages/payment', { total: total }); // Pass total to the view
+});
+
+
+
+// Route to simulate payment and update order status
+app.post('/pay_now', function(req, res) {
+    var con = mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: '',
+        database: 'node_project'
+    });
+
+    var status = "paid";
+    var date = new Date();
+    
+    // Assuming you want to update the last order placed
+    var query = "UPDATE orders SET status = ?, date = ? ORDER BY id DESC LIMIT 1";
+
+    con.connect(function(err) {
+        if (err) {
+            console.log(err);
+        } else {
+            con.query(query, [status, date], function(err, result) {
+                if (err) {
+                    console.log(err);
+                } else {
+                    res.redirect('/payment_success');
+                }
+            });
+        }
+    });
+});
+
+app.get('/payment_success', function(req, res) {
+    res.render('pages/payment_success');
 });

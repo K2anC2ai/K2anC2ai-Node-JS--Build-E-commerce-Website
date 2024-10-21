@@ -1,0 +1,18 @@
+<!-- views/pages/payment.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment</title>
+</head>
+<body>
+    <h1>Complete Your Payment</h1>
+    <p>Total amount: <%= total %> </p>
+
+    <!-- Simulate Payment Button -->
+    <form action="/pay_now" method="POST">
+        <button type="submit">Pay Now</button>
+    </form>
+</body>
+</html>

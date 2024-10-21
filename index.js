@@ -108,3 +108,20 @@ app.get('/cart',function(req,res){
 
 
 });
+
+
+app.post('/remove_product',function(req,res){
+
+    var id = req.body.id;
+    var cart = req.session.cart;
+
+    for(let i=0;  i<cart.length; i++){
+        if(cart[i].id == id){
+            cart.splice(cart.indexOf(i),1);
+        }
+    }
+
+    calculateTotal(cart,req);
+    res.redirect('/cart');
+
+});

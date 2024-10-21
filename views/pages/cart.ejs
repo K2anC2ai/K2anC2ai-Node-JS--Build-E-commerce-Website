@@ -75,7 +75,7 @@
                         <% cart.forEach(product => { %>
                             <tr>
                                 <td>
-                                    <img src="<%= product.image %>" alt="<%= product.name %>" width="100">
+                                    <img src="/images/<%= product.image %>" alt="<%= product.name %>" width="100">
                                 </td>
                                 <td><%= product.name %></td>
                                 <td><%= product.price %> ฿</td>
@@ -86,12 +86,23 @@
                                         N/A
                                     <% } %>
                                 </td>
-                                <td><%= product.quantity %></td>
+                                <td>
+                                    <form>
+                                        <input  type="number" name="quantity" value="1">
+                                        <input  type="submit" value="edit" class="edit-btn" name="edit_product_quantity_btn">
+                                    </form>
+                                </td>
                                 <td>
                                     <% let subtotal = product.sale_price ? 
                                         product.sale_price * product.quantity : 
                                         product.price * product.quantity; %>
                                     <%= subtotal %> ฿
+                                </td>
+                                <td>
+                                    <form method="post" action="remove_product">
+                                    <input type="hidden" name="id" value="<%= product.id %>">
+                                    <input type="submit" name="remove_btn" class="remove-btn" value="remove">
+                                    </form>
                                 </td>
                             </tr>
                         <% }); %>

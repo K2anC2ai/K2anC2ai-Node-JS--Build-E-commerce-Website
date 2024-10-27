@@ -1,51 +1,54 @@
-var express = require('express'); // นำเข้า express เพื่อสร้างเว็บเซิร์ฟเวอร์
-var ejs = require('ejs'); // นำเข้า EJS สำหรับการเรนเดอร์หน้าเว็บ
-var mysql = require('mysql'); // นำเข้า MySQL เพื่อเชื่อมต่อฐานข้อมูล
-var bodyParser = require('body-parser'); // ใช้สำหรับแปลงข้อมูลที่ส่งจากฟอร์ม
-var session = require('express-session'); // ใช้สำหรับจัดการเซสชันผู้ใช้
+// นำเข้าโมดูลต่างๆ ที่จำเป็นสำหรับการสร้างเว็บแอปพลิเคชัน
+var express = require('express'); // ใช้ Express สำหรับสร้างเซิร์ฟเวอร์เว็บ
+var ejs = require('ejs'); // ใช้ EJS สำหรับการเรนเดอร์หน้าเว็บ
+var mysql = require('mysql'); // ใช้ MySQL เพื่อเชื่อมต่อฐานข้อมูล
+var bodyParser = require('body-parser'); // ใช้ bodyParser สำหรับแปลงข้อมูลที่ส่งจากฟอร์ม
+var session = require('express-session'); // ใช้ express-session สำหรับจัดการเซสชันผู้ใช้
 
 const app = express(); // สร้างแอป Express
 
-app.listen(8080); // ตั้งค่าให้เซิร์ฟเวอร์ฟังที่พอร์ต 8080
-app.use(bodyParser.urlencoded({ extended: true })); // ใช้ bodyParser เพื่อแปลงข้อมูลฟอร์ม
+// ตั้งค่าและใช้งาน middleware ต่างๆ
+app.listen(8080); // กำหนดพอร์ตที่แอปจะฟัง (พอร์ต 8080)
+app.use(bodyParser.urlencoded({ extended: true })); // ใช้ bodyParser สำหรับแปลงข้อมูลฟอร์ม
 app.use(express.static('public')); // กำหนดให้ใช้ไฟล์ในโฟลเดอร์ public เป็นไฟล์ static
 app.set('view engine', 'ejs'); // ตั้งค่า EJS เป็น template engine
-app.use(session({secret: "secret",resave:false,saveUninitialized:false,})); // ตั้งค่าเซสชัน
+app.use(session({ secret: "secret", resave: false, saveUninitialized: false })); // ตั้งค่า session สำหรับเก็บข้อมูลผู้ใช้
 
-// เชื่อมต่อกับ MySQL
+// เชื่อมต่อกับฐานข้อมูล MySQL
 mysql.createConnection({
     host: 'localhost', // ที่อยู่ของฐานข้อมูล
     user: 'root', // ชื่อผู้ใช้ฐานข้อมูล
     password: '', // รหัสผ่านฐานข้อมูล
-    database: 'node_project' // ชื่อฐานข้อมูลที่ใช้
+    database: 'node_project' // ชื่อฐานข้อมูล
 });
 
-// ฟังก์ชันตรวจสอบว่าสินค้าอยู่ในตะกร้าหรือเปล่า
-function isProductInCart(cart,id){
-    for(let i = 0; i < cart.length; i++){ // ลูปผ่านสินค้าทั้งหมดในตะกร้า
-        if(cart[i].id == id){ // ถ้าสินค้ามีในตะกร้า
-            return true; // คืนค่า true ถ้ามี
+// ฟังก์ชันตรวจสอบว่าสินค้าอยู่ในตะกร้าหรือไม่
+function isProductInCart(cart, id) {
+    for (let i = 0; i < cart.length; i++) {
+        if (cart[i].id == id) { // ตรวจสอบว่า id ของสินค้าตรงกับ id ในตะกร้า
+            return true;
         }
     }
-    return false; // คืนค่า false ถ้าไม่พบ
+    return false; // ถ้าไม่พบสินค้าในตะกร้า คืนค่า false
 };
 
 // ฟังก์ชันคำนวณยอดรวมในตะกร้า
 function calculateTotal(cart, req) {
-    let total = 0;  // เริ่มต้นยอดรวมที่ 0
-    for (let i = 0; i < cart.length; i++) {  // ลูปผ่านสินค้าทั้งหมดในตะกร้า
-        if (cart[i].sale_price) { // ถ้ามีราคาลด
-            total += cart[i].sale_price * cart[i].quantity; // คำนวณยอดรวม
+    let total = 0; // กำหนดยอดรวมเริ่มต้นที่ 0
+    for (let i = 0; i < cart.length; i++) {
+        // ตรวจสอบว่ามีราคาลดหรือไม่ และคำนวณยอดรวมตามจำนวนสินค้า
+        if (cart[i].sale_price) {
+            total += cart[i].sale_price * cart[i].quantity;
         } else {
-            total += cart[i].price * cart[i].quantity; // ถ้าไม่มีราคาลด ก็คำนวณจากราคาปกติ
+            total += cart[i].price * cart[i].quantity;
         }
     }
-    req.session.total = total;  // เก็บยอดรวมในเซสชัน
-    return total; // คืนค่ายอดรวม
+    req.session.total = total; // บันทึกยอดรวมใน session
+    return total; // คืนค่ายอดรวมทั้งหมด
 }
 
-// หน้าแรกแสดงสินค้าทั้งหมด
-app.get('/', function(req, res){
+// Route หน้าแรกของแอป แสดงสินค้าทั้งหมดจากฐานข้อมูล
+app.get('/', function(req, res) {
     var con = mysql.createConnection({
         host: 'localhost',
         user: 'root',
@@ -53,172 +56,175 @@ app.get('/', function(req, res){
         database: 'node_project'
     });
 
-    con.query("SELECT * FROM products",(err,result)=>{ // ดึงข้อมูลสินค้าจากฐานข้อมูล
-        res.render('pages/index',{result: result}); // แสดงผลสินค้าบนหน้าเว็บ
+    // ดึงข้อมูลสินค้าทั้งหมดจากฐานข้อมูลและแสดงผลในหน้า index
+    con.query("SELECT * FROM products", (err, result) => {
+        res.render('pages/index', { result: result });
     });
 });
 
-// เพิ่มสินค้าลงในตะกร้า
-app.post('/add_to_cart',function(req, res){
-    var id = req.body.id; // ดึง id ของสินค้า
-    var name = req.body.name; // ดึงชื่อสินค้า
-    var price = req.body.price; // ดึงราคาสินค้า
-    var sale_price = req.body.sale_price; // ดึงราคาลด
-    var quantity = req.body.quantity; // ดึงจำนวนสินค้า
-    var image = req.body.image; // ดึงลิงก์รูปสินค้า
-    var product = {id:id,name:name,price:price,sale_price:sale_price,quantity:quantity,image:image} // สร้างออบเจ็กต์สินค้า
+// Route สำหรับเพิ่มสินค้าไปยังตะกร้า
+app.post('/add_to_cart', function(req, res) {
+    // ดึงข้อมูลสินค้าจากฟอร์ม
+    var id = req.body.id;
+    var name = req.body.name;
+    var price = req.body.price;
+    var sale_price = req.body.sale_price;
+    var quantity = req.body.quantity;
+    var image = req.body.image;
 
-    if(req.session.cart){ // ถ้ามีตะกร้าในเซสชัน
+    // สร้างออบเจ็กต์สินค้าที่จะเพิ่มเข้าไปในตะกร้า
+    var product = { id: id, name: name, price: price, sale_price: sale_price, quantity: quantity, image: image };
+
+    if (req.session.cart) { // ตรวจสอบว่ามีตะกร้าใน session หรือไม่
         var cart = req.session.cart;
-        if(!isProductInCart(cart,id)){ // ตรวจสอบว่าสินค้าอยู่ในตะกร้าหรือยัง
-            cart.push(product); // ถ้าไม่อยู่ให้เพิ่มสินค้า
+        if (!isProductInCart(cart, id)) { // ถ้าสินค้ายังไม่มีในตะกร้า
+            cart.push(product); // เพิ่มสินค้าเข้าไปในตะกร้า
         }
-    }else{
-        req.session.cart = [product]; // ถ้ายังไม่มี ให้สร้างตะกร้าใหม่
-        var cart = req.session.cart; // กำหนดให้ cart เป็นตะกร้าในเซสชัน
+    } else {
+        req.session.cart = [product]; // ถ้ายังไม่มีตะกร้า ให้สร้างตะกร้าใหม่ใน session
+        var cart = req.session.cart;
     }
 
-    calculateTotal(cart,req); // คำนวณยอดรวม
+    calculateTotal(cart, req); // คำนวณยอดรวมของตะกร้า
 
-    res.redirect('/cart'); // เปลี่ยนเส้นทางไปที่หน้า cart
+    res.redirect('/cart'); // เปลี่ยนหน้าไปยังหน้าแสดงตะกร้าสินค้า
 });
 
-// หน้าแสดงตะกร้าสินค้า
-app.get('/cart',function(req,res){
-    var cart = req.session.cart; // ดึงตะกร้าจากเซสชัน
-    var total = req.session.total; // ดึงยอดรวมจากเซสชัน
-    res.render('pages/cart',{cart:cart,total:total}); // แสดงผลตะกร้าและยอดรวม
+// Route แสดงหน้า cart ที่มีสินค้าในตะกร้า
+app.get('/cart', function(req, res) {
+    var cart = req.session.cart; // ดึงข้อมูลตะกร้าจาก session
+    var total = req.session.total; // ดึงยอดรวมจาก session
+    res.render('pages/cart', { cart: cart, total: total }); // แสดงข้อมูลในหน้า cart
 });
 
-// ลบสินค้าจากตะกร้า
-app.post('/remove_product',function(req,res){
-    var id = req.body.id; // ดึง id ของสินค้าที่ต้องการลบ
-    var cart = req.session.cart; // ดึงตะกร้าจากเซสชัน
+// Route ลบสินค้าออกจากตะกร้า
+app.post('/remove_product', function(req, res) {
+    var id = req.body.id;
+    var cart = req.session.cart;
 
-    for(let i=0;  i<cart.length; i++){ // ลูปผ่านสินค้าทั้งหมดในตะกร้า
-        if(cart[i].id == id){ // ถ้าพบสินค้าในตะกร้า
-            cart.splice(cart.indexOf(i),1); // ลบสินค้านั้นออกจากตะกร้า
+    for (let i = 0; i < cart.length; i++) {
+        if (cart[i].id == id) { // ถ้าพบสินค้าตรงกับ id ที่ส่งมา
+            cart.splice(i, 1); // ลบสินค้าออกจากตะกร้า
+            break;
         }
     }
 
-    calculateTotal(cart,req); // คำนวณยอดรวมอีกครั้ง
-    res.redirect('/cart'); // เปลี่ยนเส้นทางไปที่หน้า cart
+    calculateTotal(cart, req); // คำนวณยอดรวมอีกครั้งหลังจากลบสินค้า
+    res.redirect('/cart'); // กลับไปหน้า cart
 });
 
-// แก้ไขจำนวนสินค้าที่อยู่ในตะกร้า
-app.post('/edit_product_quantity',function(req,res){
-    var id = req.body.id; // ดึง id ของสินค้า
-    var quantity = req.body.quantity; // ดึงจำนวนที่ส่งมา
-    var increase_btn = req.body.increase_product_quantity; // เช็คว่ามีการกดเพิ่มจำนวนไหม
-    var decrease_btn = req.body.decrease_product_quantity; // เช็คว่ามีการกดลดจำนวนไหม
+// Route แก้ไขจำนวนสินค้าที่อยู่ในตะกร้า
+app.post('/edit_product_quantity', function(req, res) {
+    var id = req.body.id;
+    var quantity = req.body.quantity;
+    var increase_btn = req.body.increase_product_quantity;
+    var decrease_btn = req.body.decrease_product_quantity;
 
-    var cart = req.session.cart; // ดึงตะกร้าจากเซสชัน
+    var cart = req.session.cart;
 
-    if(increase_btn){ // ถ้ากดเพิ่มจำนวน
-        for(let i=0; i<cart.length;i++){ // ลูปผ่านสินค้าทั้งหมดในตะกร้า
-            if(cart[i].id == id){ // ถ้าพบสินค้า
-                if(cart[i].quantity >0){ // ถ้าจำนวนมากกว่า 0
-                    cart[i].quantity = parseInt(cart[i].quantity)+1; // เพิ่มจำนวน
-                }
+    if (increase_btn) { // ถ้ากดเพิ่มจำนวนสินค้า
+        for (let i = 0; i < cart.length; i++) {
+            if (cart[i].id == id) {
+                cart[i].quantity = parseInt(cart[i].quantity) + 1;
+                break;
             }
         }
     }
-    if(decrease_btn){ // ถ้ากดลดจำนวน
-        for(let i=0; i<cart.length;i++){ // ลูปผ่านสินค้าทั้งหมดในตะกร้า
-            if(cart[i].id == id){ // ถ้าพบสินค้า
-                if(cart[i].quantity >1){ // ถ้าจำนวนน้อยกว่า 1
-                    cart[i].quantity = parseInt(cart[i].quantity)-1; // ลดจำนวน
-                }
+    if (decrease_btn) { // ถ้ากดลดจำนวนสินค้า
+        for (let i = 0; i < cart.length; i++) {
+            if (cart[i].id == id) {
+                cart[i].quantity = parseInt(cart[i].quantity) - 1;
+                break;
             }
         }
     }
 
-    calculateTotal(cart,req); // คำนวณยอดรวมอีกครั้ง
-    res.redirect('/cart') // เปลี่ยนเส้นทางไปที่หน้า cart
+    calculateTotal(cart, req); // คำนวณยอดรวมใหม่
+    res.redirect('/cart'); // กลับไปที่หน้า cart
 });
 
-// หน้าเช็คเอาท์
-app.get('/checkout',function(req,res){
-    var total = req.session.total; // ดึงยอดรวมจากเซสชัน
-    res.render('pages/checkout',{total:total}); // แสดงยอดรวมในหน้าเช็คเอาท์
+// Route แสดงหน้า checkout
+app.get('/checkout', function(req, res) {
+    var total = req.session.total;
+    res.render('pages/checkout', { total: total }); // แสดงยอดรวมในหน้า checkout
 });
 
-// สั่งซื้อสินค้า
-app.post('/place_order',function(req,res){
-    var name = req.body.name; // ดึงชื่อผู้สั่ง
-    var email = req.body.email; // ดึงอีเมล
-    var phone = req.body.phone; // ดึงเบอร์โทร
-    var city = req.body.city; // ดึงเมือง
-    var address = req.body.address; // ดึงที่อยู่
-    var cost = req.session.total; // ดึงยอดรวม
-    var status = "not paid"; // ตั้งค่าสถานะเริ่มต้นว่าไม่ชำระเงิน
-    var date = new Date(); // วันที่สั่งซื้อ
-    var product_ids = ""; // สร้างตัวแปรสำหรับเก็บ id สินค้า
+// Route วางคำสั่งซื้อและบันทึกข้อมูลการสั่งซื้อในฐานข้อมูล
+app.post('/place_order', function(req, res) {
+    // ดึงข้อมูลผู้สั่งซื้อจากฟอร์ม
+    var name = req.body.name;
+    var email = req.body.email;
+    var phone = req.body.phone;
+    var city = req.body.city;
+    var address = req.body.address;
+    var cost = req.session.total;
+    var status = "not paid";
+    var date = new Date();
+    var product_ids = "";
 
     var con = mysql.createConnection({
-        host: 'localhost', // ที่อยู่ของฐานข้อมูล
-        user: 'root', // ชื่อผู้ใช้ฐานข้อมูล
-        password: '', // รหัสผ่านฐานข้อมูล
-        database: 'node_project' // ชื่อฐานข้อมูล
+        host: 'localhost',
+        user: 'root',
+        password: '',
+        database: 'node_project'
     });
 
-    var cart = req.session.cart; // ดึงตะกร้าจากเซสชัน
-    for(let i=0; i<cart.length; i++){ // ลูปผ่านสินค้าทั้งหมดในตะกร้า
-        product_ids = product_ids +","+cart[i].id; // สร้างสตริงของ id สินค้า
+    var cart = req.session.cart;
+    for (let i = 0; i < cart.length; i++) {
+        product_ids += "," + cart[i].id;
     }
 
-    con.connect((err)=>{ // เชื่อมต่อกับฐานข้อมูล
-        if(err){
-            console.log(err) // ถ้ามีข้อผิดพลาดแสดงผล
-        }else{
-            var query = "INSERT INTO orders(cost,name,email,status,city,address,phone,date,product_ids) VALUES ?"; // สร้างคำสั่ง SQL สำหรับสั่งซื้อ
-            var values = [
-            [cost,name,email,status,city,address,phone,date,product_ids] // ข้อมูลที่ต้องการบันทึก
-            ];
-            con.query(query,[values],(err,result)=>{ // ส่งคำสั่ง SQL ไปยังฐานข้อมูล
-                res.redirect('/payment') // เปลี่ยนเส้นทางไปที่หน้าชำระเงิน
-            })
-        }
-    })
-});
-
-// หน้าแสดงการชำระเงิน
-app.get('/payment', function (req, res) {
-    var total = req.session.total; // ดึงยอดรวมจากเซสชัน
-    res.render('pages/payment', { total: total }); // ส่งยอดรวมไปยังหน้าแสดงการชำระเงิน
-});
-
-// Route สำหรับการชำระเงินและอัปเดตสถานะการสั่งซื้อ
-app.post('/pay_now', function(req, res) {
-    var con = mysql.createConnection({
-        host: 'localhost', // ที่อยู่ของฐานข้อมูล
-        user: 'root', // ชื่อผู้ใช้ฐานข้อมูล
-        password: '', // รหัสผ่านฐานข้อมูล
-        database: 'node_project' // ชื่อฐานข้อมูล
-    });
-
-    var status = "paid"; // ตั้งค่าสถานะเป็นชำระแล้ว
-    var date = new Date(); // วันที่ชำระเงิน
-    
-    // คำสั่ง SQL อัปเดตสถานะการสั่งซื้อล่าสุด
-    var query = "UPDATE orders SET status = ?, date = ? ORDER BY id DESC LIMIT 1";
-
-    con.connect(function(err) { // เชื่อมต่อกับฐานข้อมูล
+    con.connect((err) => {
         if (err) {
-            console.log(err); // ถ้ามีข้อผิดพลาดแสดงผล
+            console.log(err);
         } else {
-            con.query(query, [status, date], function(err, result) { // ส่งคำสั่ง SQL เพื่ออัปเดตสถานะ
-                if (err) {
-                    console.log(err); // ถ้ามีข้อผิดพลาดแสดงผล
-                } else {
-                    res.redirect('/payment_success'); // เปลี่ยนเส้นทางไปที่หน้าชำระเงินสำเร็จ
-                }
+            var query = "INSERT INTO orders(cost, name, email, status, city, address, phone, date, product_ids) VALUES ?";
+            var values = [
+                [cost, name, email, status, city, address, phone, date, product_ids]
+            ];
+            con.query(query, [values], (err, result) => {
+                res.redirect('/payment');
             });
         }
     });
 });
 
-// หน้าแสดงการชำระเงินสำเร็จ
-app.get('/payment_success', function(req, res) {
-    res.render('pages/payment_success'); // แสดงผลหน้าชำระเงินสำเร็จ
+// Route แสดงหน้าชำระเงิน
+app.get('/payment', function(req, res) {
+    var total = req.session.total;
+    res.render('pages/payment', { total: total });
+});
+
+// Route จัดการการชำระเงินและอัปเดตสถานะการสั่งซื้อ
+app.post('/pay_now', function(req, res) {
+    var con = mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: '',
+        database: 'node_project'
+    });
+
+    var status = "paid";
+    var date = new Date();
+
+    var query = "UPDATE orders SET status = ?, date = ? ORDER BY id DESC LIMIT 1";
+
+    con.connect(function(err) {
+        if (err) {
+            console.log(err);
+        } else {
+            con.query(query, [status, date], function(err, result) {
+                if (err) {
+                    console.log(err);
+                }
+                res.redirect('/thank_you');
+            });
+        }
+    });
+});
+
+// Route ขอบคุณผู้ใช้หลังจากทำรายการสำเร็จ
+app.get('/thank_you', function(req, res) {
+    var total = req.session.total;
+    res.render('pages/thank_you', { total: total });
 });

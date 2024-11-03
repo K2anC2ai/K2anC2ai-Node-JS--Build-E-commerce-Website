@@ -226,5 +226,5 @@ app.post('/pay_now', function(req, res) {
 // Route ขอบคุณผู้ใช้หลังจากทำรายการสำเร็จ
 app.get('/thank_you', function(req, res) {
     var total = req.session.total;
-    res.render('pages/thank_you', { total: total });
+    res.render('pages/payment_success', { total: total });
 });
